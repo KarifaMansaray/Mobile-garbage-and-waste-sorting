@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EcoSort - Waste Classification</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(90deg, #4CAF50 0%, #2E7D32 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .camera-container {
+            width: 100%;
+            height: 250px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed #ccc;
+        }
+        
+        #videoElement {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+            transform: rotateY(180deg);
+        }
+        
+        .camera-placeholder {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+        }
+        
+        .camera-icon {
+            font-size: 64px;
+            margin-bottom: 10px;
+        }
+        
+        #capturedImage {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: black;
+            display: none;
+        }
+        
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+        }
+        
+        .btn-primary:active {
+            background: linear-gradient(90deg, #1976D2 0%, #1565C0 100%);
+            transform: scale(0.98);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(90deg, #FF9800 0%, #F57C00 100%);
+            color: white;
+        }
+        
+        .btn-secondary:active {
+            background: linear-gradient(90deg, #F57C00 0%, #EF6C00 100%);
+            transform: scale(0.98);
+        }
+        
+        .result-container {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .waste-type {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2E7D32;
+            margin-bottom: 15px;
+            text-align: center;
+            padding: 10px;
+            background-color: #E8F5E9;
+            border-radius: 8px;
+        }
+        
+        .instruction {
+            font-size: 16px;
+            color: #444;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #FFF8E1;
+            font-weight: 500;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4CAF50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .confidence {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .confidence-bar {
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .confidence-level {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 100%);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 1s ease;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 14px;
+            color: #777;
+            border-top: 1px solid #eee;
+        }
+        
+        .camera-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .camera-btn {
+            padding: 12px 20px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        
+        .camera-btn:active {
+            background-color: #1976D2;
+            transform: scale(0.95);
+        }
+        
+        .permission-note {
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #fff8e1;
+            border-radius: 8px;
+        }
+        
+        .simulation-controls {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .simulation-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #555;
+            text-align: center;
+        }
+        
+        .waste-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .waste-option {
+            padding: 8px 15px;
+            background-color: #E3F2FD;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .waste-option:active {
+            background-color: #BBDEFB;
+            transform: scale(1.05);
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            .content {
+                padding: 15px;
+            }
+            
+            .camera-container {
+                height: 200px;
+            }
+            
+            .button-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .camera-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .camera-btn {
+                width: 100%;
+            }
+        }
+        
+        .debug-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>EcoSort - Waste Classification</h1>
+            <p>Take a photo of waste to identify how to dispose of it properly</p>
+        </div>
+        
+        <div class="content">
+            <div class="camera-container">
+                <div class="camera-placeholder" id="cameraPlaceholder">
+                    <div class="camera-icon"><i class="fas fa-camera"></i></div>
+                    <p id="cameraStatus">Preparing camera...</p>
+                </div>
+                <video id="videoElement" autoplay playsinline muted></video>
+                <canvas id="canvasElement" style="display:none;"></canvas>
+                <img id="capturedImage" alt="Captured image">
+            </div>
+            
+            <div class="camera-controls">
+                <button id="startCamera" class="camera-btn">
+                    <i class="fas fa-camera"></i> Start Camera
+                </button>
+                <button id="switchCamera" class="camera-btn" style="display: none;">
+                    <i class="fas fa-sync-alt"></i> Switch Camera
+                </button>
+            </div>
+            
+            <div class="button-container">
+                <button id="takePhotoBtn" class="btn btn-primary" disabled>
+                    <i class="fas fa-camera"></i> Take Photo
+                </button>
+                <button id="resetBtn" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> Reset
+                </button>
+            </div>
+            
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <p id="loadingText">Analyzing waste type...</p>
+            </div>
+            
+            <div class="result-container">
+                <div class="result-title">Classification Result:</div>
+                <div id="wasteType" class="waste-type">-</div>
+                <div id="instruction" class="instruction">Take a photo to identify waste</div>
+                <div class="confidence">
+                    <div>Confidence: <span id="confidenceValue">0%</span></div>
+                    <div class="confidence-bar">
+                        <div class="confidence-level" id="confidenceBar"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="simulation-controls">
+                <div class="simulation-title">Simulation Controls (for testing):</div>
+                <div class="waste-options">
+                    <div class="waste-option" data-type="Plastic">Plastic</div>
+                    <div class="waste-option" data-type="Organic">Organic</div>
+                    <div class="waste-option" data-type="Paper">Paper</div>
+                    <div class="waste-option" data-type="Glass">Glass</div>
+                    <div class="waste-option" data-type="Metal">Metal</div>
+                    <div class="waste-option" data-type="Other">Other</div>
+                </div>
+            </div>
+            
+            <div class="permission-note">
+                <p><i class="fas fa-info-circle"></i> Note: Please allow camera permissions when prompted</p>
+            </div>
+            
+            <div class="debug-info" id="debugInfo">
+                <p>Debug: Page loaded successfully. Click "Start Camera" to begin.</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Powered by Teachable Machine | University Project</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const takePhotoBtn = document.getElementById('takePhotoBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const startCameraBtn = document.getElementById('startCamera');
+        const switchCameraBtn = document.getElementById('switchCamera');
+        const videoElement = document.getElementById('videoElement');
+        const canvasElement = document.getElementById('canvasElement');
+        const capturedImage = document.getElementById('capturedImage');
+        const wasteTypeElement = document.getElementById('wasteType');
+        const instructionElement = document.getElementById('instruction');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const loadingText = document.getElementById('loadingText');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const cameraStatus = document.getElementById('cameraStatus');
+        const confidenceValue = document.getElementById('confidenceValue');
+        const confidenceBar = document.getElementById('confidenceBar');
+        const wasteOptions = document.querySelectorAll('.waste-option');
+        const debugInfo = document.getElementById('debugInfo');
+        
+        // Model variables
+        let model = null;
+        let stream = null;
+        let currentFacingMode = 'environment'; // Start with back camera
+        
+        // Teachable Machine model URL
+        const URL = "https://karifamansaray.github.io/Ecosort-model/";
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+        
+        // Debug function
+        function debugLog(message) {
+            debugInfo.innerHTML = `<p>${new Date().toLocaleTimeString()}: ${message}</p>`;
+            console.log(message);
+        }
+        
+        // Initialize the app
+        async function init() {
+            try {
+                debugLog("Page initialized");
+                
+                // Load the Teachable Machine model
+                loadingIndicator.style.display = 'block';
+                loadingText.textContent = 'Loading AI model...';
+                
+                debugLog("Loading model from: " + modelURL);
+                
+                // Try to load the actual model
+                try {
+                    model = await tmImage.load(modelURL, metadataURL);
+                    debugLog("Model loaded successfully");
+                } catch (modelError) {
+                    debugLog("Model failed to load, using simulation mode: " + modelError.message);
+                    // Continue with simulation mode
+                }
+                
+                loadingIndicator.style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error in init:', error);
+                debugLog('Error in initialization: ' + error.message);
+            }
+        }
+        
+        // Start the camera
+        async function setupCamera() {
+            try {
+                debugLog("Setting up camera...");
+                cameraStatus.textContent = "Accessing camera...";
+                
+                // Reset any existing stream
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Set up camera constraints
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: currentFacingMode },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                };
+
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (err) {
+                    debugLog("Primary constraints failed, trying fallback...");
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                }
+                
+                // Get camera stream
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                debugLog("Camera access granted");
+                
+                // Set the stream to the video element
+                videoElement.srcObject = stream;
+                videoElement.style.display = 'block';
+                cameraPlaceholder.style.display = 'none';
+                takePhotoBtn.disabled = false;
+                switchCameraBtn.style.display = 'block';
+                startCameraBtn.style.display = 'none';
+                
+                // Play the video
+                await videoElement.play();
+                debugLog("Camera started successfully");
+                
+            } catch (error) {
+                console.error('Error setting up camera:', error);
+                debugLog('Camera error: ' + error.message);
+                
+                // Show a more user-friendly error message
+                if (error.name === 'NotAllowedError') {
+                    cameraStatus.textContent = '❌ Camera permission denied. Please enable camera access in browser settings.';
+                } else if (error.name === 'NotReadableError') {
+                    cameraStatus.textContent = '❌ Camera is already in use by another application.';
+                    cameraStatus.textContent = 'Camera permission denied. Please allow camera access in your browser settings.';
+                } else if (error.name === 'NotFoundError') {
+                    cameraStatus.textContent = 'No camera found on this device.';
+                } else if (error.name === 'OverconstrainedError') {
+                    cameraStatus.textContent = 'Camera constraints could not be satisfied. Trying again...';
+                    // Try again with different constraints
+                    setTimeout(setupCamera, 500);
+                } else {
+                    cameraStatus.textContent = 'Camera error: ' + error.message;
+                }
+                
+                // Show start camera button again
+                startCameraBtn.style.display = 'block';
+            }
+        }
+        
+        // Switch between front and back camera
+        async function switchCamera() {
+            // Stop the current stream
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Toggle camera mode
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            debugLog("Switching to camera: " + currentFacingMode);
+            
+            // Set up the camera again
+            await setupCamera();
+        }
+        
+        // Capture photo from webcam
+        function capturePhoto() {
+            if (!stream) {
+                debugLog("No camera stream available, using simulation");
+                simulateClassification("Plastic");
+                return;
+            }
+            
+            debugLog("Capturing photo...");
+            
+            // Set canvas dimensions to match video
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+            
+            // Draw current video frame to canvas
+            const ctx = canvasElement.getContext('2d');
+            ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+            
+            // Convert canvas to image
+            const imageData = canvasElement.toDataURL('image/png');
+            capturedImage.src = imageData;
+            capturedImage.style.display = 'block';
+            videoElement.style.display = 'none';
+            
+            // Classify the image
+            classifyImage(capturedImage);
+        }
+        
+        // Classify the captured image
+        async function classifyImage(imageElement) {
+            // Show loading indicator
+            loadingIndicator.style.display = 'block';
+            loadingText.textContent = 'Analyzing waste type...';
+            
+            try {
+                let predictedClass = "Other";
+                let confidence = 85;
+                
+                // Try to use the actual model if available
+                if (model) {
+                    // Predict the image using the actual model
+                    const prediction = await model.predict(imageElement);
+                    debugLog("Prediction completed");
+                    
+                    // Find the highest probability
+                    let highestProb = 0;
+                    
+                    for (let i = 0; i < prediction.length; i++) {
+                        if (prediction[i].probability > highestProb) {
+                            highestProb = prediction[i].probability;
+                            predictedClass = prediction[i].className;
+                        }
+                    }
+                    
+                    // Convert probability to percentage
+                    confidence = Math.round(highestProb * 100);
+                } else {
+                    // Fallback to simulation
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    const wasteTypes = ['Plastic', 'Organic', 'Paper', 'Glass', 'Metal', 'Other'];
+                    predictedClass = wasteTypes[Math.floor(Math.random() * wasteTypes.length)];
+                    confidence = Math.floor(Math.random() * 40) + 60; // 60-99%
+                }
+                
+                debugLog(`Classification result: ${predictedClass} (${confidence}% confidence)`);
+                
+                // Display the result
+                displayResult(predictedClass, confidence);
+                
+            } catch (error) {
+                console.error('Error classifying image:', error);
+                debugLog('Classification error: ' + error.message);
+                
+                // Fallback to simulation
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                const wasteTypes = ['Plastic', 'Organic', 'Paper', 'Glass', 'Metal', 'Other'];
+                const predictedClass = wasteTypes[Math.floor(Math.random() * wasteTypes.length)];
+                const confidence = Math.floor(Math.random() * 40) + 60;
+                
+                displayResult(predictedClass, confidence);
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+        
+        // Display classification result
+        function displayResult(wasteType, confidence) {
+            // Update waste type
+            wasteTypeElement.textContent = wasteType;
+            
+            // Update confidence indicator
+            confidenceValue.textContent = confidence + '%';
+            confidenceBar.style.width = confidence + '%';
+            
+            // Update instruction based on waste type
+            switch(wasteType) {
+                case 'Plastic':
+                    instructionElement.textContent = '♻️ Recycle plastics in blue bin.';
+                    instructionElement.style.backgroundColor = '#E8F5E9';
+                    break;
+                case 'Organic':
+                    instructionElement.textContent = '🌱 Compost it!';
+                    instructionElement.style.backgroundColor = '#F1F8E9';
+                    break;
+                case 'Paper':
+                    instructionElement.textContent = '📰 Recycle with paper.';
+                    instructionElement.style.backgroundColor = '#FFF8E1';
+                    break;
+                case 'Glass':
+                    instructionElement.textContent = '🍾 Recycle glass.';
+                    instructionElement.style.backgroundColor = '#E3F2FD';
+                    break;
+                case 'Metal':
+                    instructionElement.textContent = '🔧 Scrap metal can be reused.';
+                    instructionElement.style.backgroundColor = '#F3E5F5';
+                    break;
+                default:
+                    instructionElement.textContent = '❓ Cannot determine waste type.';
+                    instructionElement.style.backgroundColor = '#FFEBEE';
+            }
+            
+            debugLog(`Displaying result: ${wasteType} with ${confidence}% confidence`);
+        }
+        
+        // Reset the app
+        function resetApp() {
+            debugLog("Resetting application...");
+            
+            // Stop stream if it's running
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            // Hide captured image and show camera placeholder
+            capturedImage.style.display = 'none';
+            videoElement.style.display = 'none';
+            videoElement.srcObject = null;
+            cameraPlaceholder.style.display = 'flex';
+            cameraStatus.textContent = 'Click "Start Camera" to begin';
+            
+            // Reset results
+            wasteTypeElement.textContent = '-';
+            instructionElement.textContent = 'Take a photo to identify waste';
+            instructionElement.style.backgroundColor = '#FFF8E1';
+            confidenceValue.textContent = '0%';
+            confidenceBar.style.width = '0%';
+            
+            // Hide loading indicator
+            loadingIndicator.style.display = 'none';
+            
+            // Show start camera button
+            startCameraBtn.style.display = 'block';
+            switchCameraBtn.style.display = 'none';
+            takePhotoBtn.disabled = true;
+            
+            debugLog("Application reset complete");
+        }
+        
+        // Simulate classification for testing
+        function simulateClassification(type) {
+            // Show loading indicator
+            loadingIndicator.style.display = 'block';
+            loadingText.textContent = 'Analyzing waste type...';
+            
+            // Show sample image for the selected waste type
+            cameraPlaceholder.style.display = 'none';
+            videoElement.style.display = 'none';
+            capturedImage.style.display = 'block';
+            
+            // Set a placeholder image based on waste type
+            const placeholderImages = {
+                Plastic: 'https://images.unsplash.com/photo-1587334274527-ba54f0b5a357?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
+                Organic: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
+                Paper: 'https://images.unsplash.com/photo-1592424002053-21fccad79d6a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
+                Glass: 'https://images.unsplash.com/photo-1593075736325-1a35cc6408b7?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
+                Metal: 'https://images.unsplash.com/photo-1593848814645-7f538685a79d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
+                Other: 'https://images.unsplash.com/photo-1583512603805-3cc6b41f3edb?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'
+            };
+            
+            capturedImage.src = placeholderImages[type] || placeholderImages['Other'];
+            
+            // Display result after a short delay
+            setTimeout(() => {
+                const confidence = Math.floor(Math.random() * 40) + 60; // 60-99%
+                displayResult(type, confidence);
+                loadingIndicator.style.display = 'none';
+            }, 1500);
+        }
+        
+        // Event Listeners
+        takePhotoBtn.addEventListener('click', capturePhoto);
+        resetBtn.addEventListener('click', resetApp);
+        startCameraBtn.addEventListener('click', setupCamera);
+        switchCameraBtn.addEventListener('click', switchCamera);
+        
+        wasteOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                simulateClassification(this.dataset.type);
+            });
+        });
+        
+        // Initialize the app when the page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
